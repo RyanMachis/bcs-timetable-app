@@ -403,10 +403,47 @@ function updateLiveState() {
   `;
 }
 
+// Native & Web Notification Bridge
+const LocalNotifications = window.Capacitor?.Plugins?.LocalNotifications;
+
+async function requestNotificationAccess() {
+  if (LocalNotifications) {
+    const perm = await LocalNotifications.requestPermissions();
+    return perm.display === 'granted';
+  } else if ("Notification" in window) {
+    const perm = await Notification.requestPermission();
+    return perm === 'granted';
+  }
+  return false;
+}
+
+async function sendNativeAlert(id, title, body) {
+  if (LocalNotifications) {
+    const hasPerm = await requestNotificationAccess();
+    if (hasPerm) {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title: title,
+            body: body,
+            id: id,
+            schedule: { at: new Date(Date.now() + 1000) },
+            sound: null,
+            actionTypeId: "",
+            extra: null
+          }
+        ]
+      });
+    }
+  } else if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, { body });
+  }
+}
+
 async function checkAndSendReminders() {
   const { dayName, nowMins } = getNow();
 
-  classes.forEach(c => {
+  classes.forEach(async (c, index) => {
     if (c.day === dayName) {
       const start = mins(c.start);
       const diff = start - nowMins;
@@ -414,7 +451,8 @@ async function checkAndSendReminders() {
 
       if (diff === reminderOffsetMinutes && !notifiedSlots.has(alertKey)) {
         notifiedSlots.add(alertKey);
-        triggerNotification(
+        await sendNativeAlert(
+          index + 100,
           `Class in ${reminderOffsetMinutes} mins: ${c.code}`,
           `${c.course} starts at ${c.start} (${c.venue}).`
         );
@@ -423,17 +461,9 @@ async function checkAndSendReminders() {
   });
 }
 
-function triggerNotification(title, body) {
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification(title, { body });
-  }
-}
-
 function openSettings() {
   document.getElementById("settingsModal").style.display = "flex";
-  if ("Notification" in window && Notification.permission !== "granted") {
-    Notification.requestPermission();
-  }
+  requestNotificationAccess();
 }
 
 function closeSettings() {
@@ -445,18 +475,16 @@ function saveReminderOffset(val) {
   localStorage.setItem("reminderOffset", val);
 }
 
-function testNotification() {
-  if ("Notification" in window) {
-    Notification.requestPermission().then(permission => {
-      if (permission === "granted") {
-        triggerNotification("Timetable Reminder Test", "Notifications are active and running properly!");
-      } else {
-        alert("Please enable notification permissions in your device settings.");
-      }
-    });
+async function testNotification() {
+  const granted = await requestNotificationAccess();
+  if (!granted) {
+    alert("Please allow notification permissions in your Android App Settings.");
+    return;
   }
+  await sendNativeAlert(999, "Timetable Alert Working!", "Your class reminders are now configured and active.");
 }
 
+// Initial Boot
 document.getElementById("reminderOffset").value = reminderOffsetMinutes;
 renderSchedule();
 updateLiveState();
