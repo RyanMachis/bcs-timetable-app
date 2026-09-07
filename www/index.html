@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BCS YS1 Digital Timetable</title>
+<style>
+:root {
+  --bg: #f3f5f9;
+  --card: #ffffff;
+  --ink: #111827;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-light: #eff6ff;
+  --border: #e5e7eb;
+  --online-bg: #e0f2fe;
+  --online-border: #bae6fd;
+  --inperson-bg: #ecfdf5;
+  --inperson-border: #a7f3d0;
+  --self-bg: #fffbeb;
+  --self-border: #fde68a;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0;
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  padding-bottom: 40px;
+}
+
+.wrap { max-width: 1100px; margin: auto; padding: 16px; }
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+h1 { margin: 0; font-size: 22px; font-weight: 800; }
+.sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.btn-icon {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-card {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  color: #fff;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
+  margin-bottom: 18px;
+}
+.live-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.live-tag {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+.clock-text { font-size: 13px; opacity: 0.85; font-weight: 600; }
+.live-body h2 { margin: 0 0 6px; font-size: 19px; }
+.live-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+.meta-item .lbl { font-size: 10px; text-transform: uppercase; opacity: 0.7; }
+.meta-item .val { font-size: 14px; font-weight: 700; margin-top: 2px; }
+
+.search-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.search-box input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  background: var(--card);
+}
+.chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+.chip {
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+.chip.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+.day-column {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.day-column.today { border-color: var(--primary); }
+.day-header {
+  padding: 12px 16px;
+  background: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+.day-column.today .day-header {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.class-list { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+.card {
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.card:active { transform: scale(0.98); }
+.card.online { background: var(--online-bg); border-color: var(--online-border); }
+.card.inperson { background: var(--inperson-bg); border-color: var(--inperson-border); }
+.card.self { background: var(--self-bg); border-color: var(--self-border); }
+
+.card-top { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.card-time { font-size: 12px; font-weight: 800; color: #1d4ed8; }
+.card-venue { font-size: 11px; font-weight: 700; opacity: 0.75; }
+.card-code { font-size: 14px; font-weight: 800; }
+.card-name { font-size: 13px; color: var(--muted); margin: 2px 0 6px; }
+.card-lecturer { font-size: 12px; font-weight: 600; color: #374151; }
+
+.empty-state { text-align: center; color: var(--muted); font-size: 13px; padding: 20px; }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 99;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 18px;
+  max-width: 420px;
+  width: 100%;
+  padding: 20px;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.btn-close { border: 0; background: #f1f5f9; border-radius: 50%; width: 32px; height: 32px; font-weight: 800; cursor: pointer; }
+.setting-row { margin: 16px 0; display: flex; justify-content: space-between; align-items: center; }
+.setting-row select { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>BCS Timetable</h1>
+      <div class="sub">Year 1 · Semester 1</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="openSettings()">🔔 Alerts</button>
+    </div>
+  </header>
+
+  <section class="live-card" id="liveCard">
+    <div class="live-header">
+      <span class="live-tag" id="liveTag"><span class="dot"></span> STATUS</span>
+      <span class="clock-text" id="liveClock">--:--</span>
+    </div>
+    <div class="live-body">
+      <h2 id="liveTitle">Checking schedule...</h2>
+      <div class="live-meta" id="liveMeta"></div>
+    </div>
+  </section>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search class, code, room, or lecturer..." oninput="handleFilterChange()">
+  </div>
+
+  <div class="chip-row">
+    <button class="chip active" data-filter="all" onclick="setChipFilter(this, 'all')">All</button>
+    <button class="chip" data-filter="today" onclick="setChipFilter(this, 'today')">Today Only</button>
+    <button class="chip" data-filter="online" onclick="setChipFilter(this, 'online')">Online</button>
+    <button class="chip" data-filter="inperson" onclick="setChipFilter(this, 'inperson')">In-Person</button>
+    <button class="chip" data-filter="self" onclick="setChipFilter(this, 'self')">Self-Paced</button>
+  </div>
+
+  <div class="week-grid" id="weekGrid"></div>
+</div>
+
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="margin:0">Notification Settings</h3>
+      <button class="btn-close" onclick="closeSettings()">×</button>
+    </div>
+    <p style="font-size:13px; color:var(--muted)">Receive alerts before your lectures kick off.</p>
+    <div class="setting-row">
+      <label for="reminderOffset" style="font-size:14px; font-weight:600">Reminder Lead Time</label>
+      <select id="reminderOffset" onchange="saveReminderOffset(this.value)">
+        <option value="5">5 mins before</option>
+        <option value="10">10 mins before</option>
+        <option value="15" selected>15 mins before</option>
+        <option value="30">30 mins before</option>
+      </select>
+    </div>
+    <button class="btn-icon" style="width:100%; justify-content:center; background:var(--primary); color:#fff; border:0; margin-top:8px;" onclick="testNotification()">Send Test Alert</button>
+  </div>
+</div>
+
+<script>
+const classes = [
+  {"day": "Monday", "start": "11:00", "end": "14:00", "code": "BCU 112", "course": "Digital Literacy", "lecturer": "Eric Kirinya", "venue": "ONLINE"},
+  {"day": "Tuesday", "start": "11:00", "end": "14:00", "code": "BCU 111", "course": "Communication Skills", "lecturer": "Allan Muchemi", "venue": "ONLINE"},
+  {"day": "Wednesday", "start": "08:00", "end": "11:00", "code": "BSD 111", "course": "Structured Programming and Algorithms", "lecturer": "Richard Mathenge", "venue": "A206 LAB"},
+  {"day": "Wednesday", "start": "11:00", "end": "14:00", "code": "MAT 111", "course": "Basic Mathematics", "lecturer": "Dr. Paul Githaiga", "venue": "A401"},
+  {"day": "Wednesday", "start": "14:00", "end": "17:00", "code": "BCE 111", "course": "Computation Logic", "lecturer": "Samuel Maina", "venue": "L205"},
+  {"day": "Thursday", "start": "14:00", "end": "17:00", "code": "PHY 111", "course": "Introduction to Physics", "lecturer": "Irene Jepchirchir", "venue": "A105"},
+  {"day": "Friday", "start": "14:00", "end": "17:00", "code": "BCU 113", "course": "Health and Wellness Management", "lecturer": "—", "venue": "SELF-PACED LEARNING"}
+];
+
+const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+let activeChip = "all";
+let reminderOffsetMinutes = parseInt(localStorage.getItem("reminderOffset") || "15", 10);
+let notifiedSlots = new Set();
+
+function mins(timeStr) {
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function getNow() {
+  const d = new Date();
+  const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d.getDay()];
+  return { date: d, dayName, nowMins: d.getHours() * 60 + d.getMinutes() };
+}
+
+function getCategory(venue) {
+  if (venue === "ONLINE") return "online";
+  if (venue === "SELF-PACED LEARNING") return "self";
+  return "inperson";
+}
+
+function setChipFilter(el, type) {
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+  el.classList.add("active");
+  activeChip = type;
+  renderSchedule();
+}
+
+function handleFilterChange() {
+  renderSchedule();
+}
+
+function renderSchedule() {
+  const query = document.getElementById("searchInput").value.toLowerCase();
+  const { dayName } = getNow();
+  const grid = document.getElementById("weekGrid");
+  grid.innerHTML = "";
+
+  const displayedDays = activeChip === "today" ? [dayName] : days;
+
+  displayedDays.forEach(day => {
+    if (!days.includes(day)) return;
+
+    let dayClasses = classes.filter(c => c.day === day);
+
+    if (activeChip !== "all" && activeChip !== "today") {
+      dayClasses = dayClasses.filter(c => getCategory(c.venue) === activeChip);
+    }
+
+    if (query) {
+      dayClasses = dayClasses.filter(c =>
+        c.code.toLowerCase().includes(query) ||
+        c.course.toLowerCase().includes(query) ||
+        c.lecturer.toLowerCase().includes(query) ||
+        c.venue.toLowerCase().includes(query)
+      );
+    }
+
+    const col = document.createElement("div");
+    col.className = "day-column" + (day === dayName ? " today" : "");
+    col.innerHTML = `
+      <div class="day-header">
+        <span>${day}</span>
+        ${day === dayName ? '<span style="font-size:11px; font-weight:800; text-transform:uppercase;">Today</span>' : ''}
+      </div>
+      <div class="class-list"></div>
+    `;
+
+    const list = col.querySelector(".class-list");
+
+    if (dayClasses.length === 0) {
+      list.innerHTML = `<div class="empty-state">No classes scheduled</div>`;
+    } else {
+      dayClasses.sort((a, b) => mins(a.start) - mins(b.start)).forEach(item => {
+        const card = document.createElement("div");
+        card.className = `card ${getCategory(item.venue)}`;
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="card-time">${item.start} – ${item.end}</span>
+            <span class="card-venue">${item.venue}</span>
+          </div>
+          <div class="card-code">${item.code}</div>
+          <div class="card-name">${item.course}</div>
+          <div class="card-lecturer">👤 ${item.lecturer}</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    grid.appendChild(col);
+  });
+}
+
+function updateLiveState() {
+  const { date, dayName, nowMins } = getNow();
+
+  document.getElementById("liveClock").textContent =
+    date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) +
+    " · " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const active = classes.find(c => c.day === dayName && mins(c.start) <= nowMins && mins(c.end) > nowMins);
+  const next = classes
+    .filter(c => days.includes(c.day) && (
+      days.indexOf(c.day) > days.indexOf(dayName) ||
+      (c.day === dayName && mins(c.start) > nowMins)
+    ))
+    .sort((a, b) => days.indexOf(a.day) - days.indexOf(b.day) || mins(a.start) - mins(b.start))[0];
+
+  const target = active || next;
+  const tag = document.getElementById("liveTag");
+  const title = document.getElementById("liveTitle");
+  const meta = document.getElementById("liveMeta");
+
+  if (!target) {
+    tag.innerHTML = `<span class="dot" style="background:#94a3b8"></span> ALL CLEAR`;
+    title.textContent = "No Upcoming Classes";
+    meta.innerHTML = `<div class="meta-item"><div class="lbl">Status</div><div class="val">Free time</div></div>`;
+    return;
+  }
+
+  const isNow = !!active;
+  tag.innerHTML = `<span class="dot" style="background:${isNow ? '#22c55e' : '#38bdf8'}"></span> ${isNow ? 'ACTIVE SESSION' : 'COMING UP NEXT'}`;
+  title.textContent = `${target.code} — ${target.course}`;
+  meta.innerHTML = `
+    <div class="meta-item"><div class="lbl">Day & Time</div><div class="val">${target.day}, ${target.start} - ${target.end}</div></div>
+    <div class="meta-item"><div class="lbl">Venue</div><div class="val">${target.venue}</div></div>
+    <div class="meta-item"><div class="lbl">Lecturer</div><div class="val">${target.lecturer}</div></div>
+  `;
+}
+
+async function checkAndSendReminders() {
+  const { dayName, nowMins } = getNow();
+
+  classes.forEach(c => {
+    if (c.day === dayName) {
+      const start = mins(c.start);
+      const diff = start - nowMins;
+      const alertKey = `${c.code}-${c.day}-${c.start}`;
+
+      if (diff === reminderOffsetMinutes && !notifiedSlots.has(alertKey)) {
+        notifiedSlots.add(alertKey);
+        triggerNotification(
+          `Class in ${reminderOffsetMinutes} mins: ${c.code}`,
+          `${c.course} starts at ${c.start} (${c.venue}).`
+        );
+      }
+    }
+  });
+}
+
+function triggerNotification(title, body) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, { body });
+  }
+}
+
+function openSettings() {
+  document.getElementById("settingsModal").style.display = "flex";
+  if ("Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
+
+function saveReminderOffset(val) {
+  reminderOffsetMinutes = parseInt(val, 10);
+  localStorage.setItem("reminderOffset", val);
+}
+
+function testNotification() {
+  if ("Notification" in window) {
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        triggerNotification("Timetable Reminder Test", "Notifications are active and running properly!");
+      } else {
+        alert("Please enable notification permissions in your device settings.");
+      }
+    });
+  }
+}
+
+document.getElementById("reminderOffset").value = reminderOffsetMinutes;
+renderSchedule();
+updateLiveState();
+
+setInterval(() => {
+  updateLiveState();
+  checkAndSendReminders();
+}, 30000);
+</script>
+</body>
+</html>
