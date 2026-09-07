@@ -1,0 +1,6 @@
+{
+  "appId": "com.bcs.timetable",
+  "appName": "BCS Timetable",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
